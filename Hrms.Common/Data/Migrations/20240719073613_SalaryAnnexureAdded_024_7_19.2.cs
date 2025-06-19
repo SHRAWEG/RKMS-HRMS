@@ -1,0 +1,93 @@
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+
+#nullable disable
+
+namespace Hrms.Common.Data.Migrations
+{
+    public partial class SalaryAnnexureAdded_024_7_192 : Migration
+    {
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.CreateTable(
+                name: "SALARY_ANNEXURE",
+                columns: table => new
+                {
+                    ANX_ID = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    NAME = table.Column<string>(type: "varchar(250)", nullable: false),
+                    CREATED_BY_USER_ID = table.Column<int>(type: "integer", nullable: false),
+                    CREATED_AT = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UPDATED_AT = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SALARY_ANNEXURE", x => x.ANX_ID);
+                    table.ForeignKey(
+                        name: "FK_SALARY_ANNEXURE_AspNetUsers_CREATED_BY_USER_ID",
+                        column: x => x.CREATED_BY_USER_ID,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SALARY_ANNEXURE_DETAIL",
+                columns: table => new
+                {
+                    ANX_DETAIL_ID = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ANX_ID = table.Column<int>(type: "integer", nullable: false),
+                    NAME = table.Column<string>(type: "varchar(250)", nullable: false),
+                    SH_ID = table.Column<int>(type: "integer", nullable: false),
+                    AMOUNT = table.Column<double>(type: "double precision", nullable: false),
+                    PERCENT = table.Column<double>(type: "double precision", nullable: false),
+                    UNIT_NAME = table.Column<double>(type: "double precision", nullable: false),
+                    PER_UNIT_RATE = table.Column<double>(type: "double precision", nullable: false),
+                    CREATED_AT = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UPDATED_AT = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SALARY_ANNEXURE_DETAIL", x => x.ANX_DETAIL_ID);
+                    table.ForeignKey(
+                        name: "FK_SALARY_ANNEXURE_DETAIL_SALARY_ANNEXURE_ANX_ID",
+                        column: x => x.ANX_ID,
+                        principalTable: "SALARY_ANNEXURE",
+                        principalColumn: "ANX_ID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_SALARY_ANNEXURE_DETAIL_SALARY_HEADS_SH_ID",
+                        column: x => x.SH_ID,
+                        principalTable: "SALARY_HEADS",
+                        principalColumn: "SH_ID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SALARY_ANNEXURE_CREATED_BY_USER_ID",
+                table: "SALARY_ANNEXURE",
+                column: "CREATED_BY_USER_ID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SALARY_ANNEXURE_DETAIL_ANX_ID",
+                table: "SALARY_ANNEXURE_DETAIL",
+                column: "ANX_ID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SALARY_ANNEXURE_DETAIL_SH_ID",
+                table: "SALARY_ANNEXURE_DETAIL",
+                column: "SH_ID");
+        }
+
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "SALARY_ANNEXURE_DETAIL");
+
+            migrationBuilder.DropTable(
+                name: "SALARY_ANNEXURE");
+        }
+    }
+}
