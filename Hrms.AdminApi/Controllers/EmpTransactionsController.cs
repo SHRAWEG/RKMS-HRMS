@@ -48,6 +48,11 @@ namespace Hrms.AdminApi.Controllers
                 .Include(x => x.CostCenter)
                 .Include(x => x.UniformType)
                 .Include(x => x.SalaryBank)
+                .Include(x => x.Guest)
+                .Include(x => x.Bhandar)
+                .Include(x => x.AccountCode)
+                .Include(x => x.AccountType)
+
                 .FirstOrDefaultAsync(x => x.Id == pId);
 
             if (User.GetUserRole() != "super-admin")
@@ -160,6 +165,15 @@ namespace Hrms.AdminApi.Controllers
                     data?.VpfAmount,
                     WorkHourId = workHourId,
                     WorkHourName = workHourName,
+                    data?.GuestId,
+                    GuestName = data?.Guest?.Name,
+                    data?.BhandarId,
+                    BhandarName = data?.Bhandar?.Name,
+                    data?.AccountTypeId,
+                    AccountTypeName = data?.AccountType?.Name,
+                    data?.AccountCodeId,
+                    AccountCodeName = data?.AccountCode?.Name,
+
                 }
             });
         }
@@ -257,6 +271,10 @@ namespace Hrms.AdminApi.Controllers
                 IfscCode = input.IfscCode,
                 VpfApplicable = input.VpfApplicable,
                 VpfAmount = input.VpfAmount,
+                GuestId = input.GuestId,
+                BhandarId = input.BhandarId,
+                AccountTypeId = input.AccountTypeId,
+                AccountCodeId = input.AccountCodeId,
                 TransactionUser = User.GetUsername(),
 
                 //Default Values
@@ -518,6 +536,10 @@ namespace Hrms.AdminApi.Controllers
             data.SalaryBankId = input.SalaryBankId;
             data.AccountNumber = input.AccountNumber;
             data.PfAccountNumber = input.PfAccountNumber;
+            data.GuestId = input.GuestId;
+            data.BhandarId = input.BhandarId;
+            data.AccountTypeId = input.AccountTypeId;
+            data.AccountCodeId = input.AccountCodeId;
 
             await _context.SaveChangesAsync();
 
@@ -758,6 +780,12 @@ namespace Hrms.AdminApi.Controllers
             public string? IfscCode { get; set; }
             public bool? VpfApplicable { get; set; }
             public decimal? VpfAmount { get; set; }
+            public int? GuestId { get; set; }
+            public int? BhandarId { get; set; }
+            public int? AccountTypeId { get; set; }
+            public int? AccountCodeId { get; set; }
+
+
         }
 
         public class AddInputModel : BaseInputModel
@@ -949,67 +977,67 @@ namespace Hrms.AdminApi.Controllers
 
                 RuleFor(x => x.BusinessUnitId)
                     .IdMustExist(_context.BusinessUnits.AsQueryable())
-                    .Unless(x => x.BusinessUnitId is not null);
+                    .Unless(x => x.BusinessUnitId != null);
 
                 RuleFor(x => x.PlantId)
                     .IdMustExist(_context.Plants.AsQueryable())
-                    .Unless(x => x.PlantId is not null);
+                    .Unless(x => x.PlantId != null);
 
                 RuleFor(x => x.RegionId)
                     .IdMustExist(_context.Regions.AsQueryable())
-                    .Unless(x => x.RegionId is not null);
+                    .Unless(x => x.RegionId != null);
 
                 RuleFor(x => x.DivisionId)
                     .IdMustExist(_context.Divisions.AsQueryable())
-                    .Unless(x => x.DivisionId is not null);
+                    .Unless(x => x.DivisionId != null);
 
                 RuleFor(x => x.BranchId)
                     .IdMustExist(_context.Branches.AsQueryable())
-                    .Unless(x => x.BranchId is not null);
+                    .Unless(x => x.BranchId != null);
 
                 RuleFor(x => x.DepartmentId)
                     .IdMustExist(_context.Departments.AsQueryable())
-                    .Unless(x => x.DepartmentId is not null);
+                    .Unless(x => x.DepartmentId != null);
 
                 RuleFor(x => x.SubDepartmentId)
                     .IdMustExist(_context.Departments.AsQueryable())
-                    .Unless(x => x.SubDepartmentId is null);
+                    .Unless(x => x.SubDepartmentId != null);
 
                 RuleFor(x => x.GradeId)
                     .IdMustExist(_context.Grades.AsQueryable())
-                    .Unless(x => x.GradeId is null);
+                    .Unless(x => x.GradeId != null);
 
                 RuleFor(x => x.DesignationId)
                     .IdMustExist(_context.Designations.AsQueryable())
-                    .Unless(x => x.DesignationId is null);
+                    .Unless(x => x.DesignationId != null);
 
                 RuleFor(x => x.ModeId)
                     .IdMustExist(_context.Modes.AsQueryable())
-                    .Unless(x => x.ModeId is null);
+                    .Unless(x => x.ModeId != null);
 
                 RuleFor(x => x.CostCenterId)
                     .IdMustExist(_context.CostCenters.AsQueryable())
-                    .Unless(x => x.CostCenterId is null);
+                    .Unless(x => x.CostCenterId != null);
 
                 RuleFor(x => x.PersonType)
                     .MustBeIn(Enumeration.GetAll<EmpPersonType>().Select(x => x.Id).ToList());
 
                 RuleFor(x => x.UniformTypeId)
                     .IdMustExist(_context.UniformTypes.AsQueryable())
-                    .Unless(x => x.UniformTypeId is null);
+                    .Unless(x => x.UniformTypeId != null);
 
                 RuleFor(x => x.SalaryBankId)
                     .IdMustExist(_context.Banks.AsQueryable())
-                    .Unless(x => x.SalaryBankId is not null);
+                    .Unless(x => x.SalaryBankId != null);
 
                 RuleFor(x => x.WorkHourId)
                     .IdMustExist(_context.WorkHours.AsQueryable())
-                    .Unless(x => x.WorkHourId is null);
+                    .Unless(x => x.WorkHourId != null);
             }
 
             public ValidationResult AfterAspNetValidation(ActionContext actionContext, IValidationContext validationContext, ValidationResult result)
             {
-                AddInputModel model = (AddInputModel)validationContext.InstanceToValidate;
+                UpdateInputModel model = (UpdateInputModel)validationContext.InstanceToValidate;
 
                 List<string> errorFields = ValidationHelper.GetErrorFields(result);
 

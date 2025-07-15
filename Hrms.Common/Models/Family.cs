@@ -38,5 +38,19 @@ namespace Hrms.Common.Models
 
         [Column("UPDATED_AT")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        [Column("IS_NOMINEE")]
+        public bool IsNominee { get; set; }
+
+        [Column("CONTACT_NUMBER", TypeName = "varchar(20)")]
+        public string? ContactNumber { get; set; }
+
+        [Column("PERCENTAGE_OF_SHARE", TypeName = "decimal(5,2)")]
+        public decimal? PercentageOfShare { get; set; }
+
+        public EmpDocument? Document { get; set; }
+        [Column("DOCUMENT_ID")]
+        public int? DocumentId { get; set; }
+
+
     }
 }

@@ -1,8 +1,7 @@
 ﻿using Hrms.Common.Models;
+using MathNet.Numerics.RootFinding;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
-using System.Text.RegularExpressions;
 
 namespace Hrms.Common.Data
 {
@@ -126,7 +125,14 @@ namespace Hrms.Common.Data
         public DbSet<EncashmentHistory> EncashmentHistories { get; set; }
         public DbSet<LeaveEncashmentRequest> leaveEncashmentRequests { get; set; }
         public DbSet<Interview> Interviews { get; set; }
-        public DbSet<InterviewAttendece> interviewAttendeces    { get; set; }
+        public DbSet<InterviewAttendece> interviewAttendeces { get; set; }
+        public DbSet<EmpMedicalRegistration> empMedicalRegistrations { get; set; }
+        public DbSet<Bhandar> Bhandars { get; set; }
+        public DbSet<Guest> Guests { get; set; }
+        public DbSet<AccountType> AccountTypes { get; set; }
+        public DbSet<AccountCode> AccountCodes { get; set; }
+
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -218,6 +224,42 @@ namespace Hrms.Common.Data
                 .HasOne(eshd => eshd.EmpSh)
                 .WithMany(esh => esh.EmpSalaryHeadDetails)
                 .HasForeignKey(eshd => eshd.EmpShId);
+
+            builder.Entity<Bhandar>()
+                .HasIndex(b => b.Name)
+                .IsUnique();
+
+            builder.Entity<Guest>()
+                .HasIndex(b => b.Name)
+                .IsUnique();
+
+            builder.Entity<AccountType>()
+                  .HasIndex(a => a.Name)
+                       .IsUnique();
+
+            builder.Entity<AccountCode>()
+                  .HasIndex(a => a.Name)
+                  .IsUnique();
+
+            builder.Entity<EmpTransaction>()
+                   .HasOne(e => e.Guest)
+                   .WithMany()
+                   .HasForeignKey(e => e.GuestId);
+
+            builder.Entity<EmpTransaction>()
+                .HasOne(e => e.Bhandar)
+                .WithMany()
+                .HasForeignKey(e => e.BhandarId);
+
+            builder.Entity<EmpTransaction>()
+                .HasOne(e => e.AccountType)
+                .WithMany()
+                .HasForeignKey(e => e.AccountTypeId);
+
+            builder.Entity<EmpTransaction>()
+                .HasOne(e => e.AccountCode)
+                .WithMany()
+                .HasForeignKey(e => e.AccountCodeId);
         }
     }
 }

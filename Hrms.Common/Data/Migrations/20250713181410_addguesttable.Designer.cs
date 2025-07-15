@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Hrms.Common.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Hrms.Common.Data.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250713181410_addguesttable")]
+    partial class addguesttable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,66 +24,6 @@ namespace Hrms.Common.Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Hrms.Common.Models.AccountCode", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("ID");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("CREATED_AT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("varchar(255)")
-                        .HasColumnName("NAME");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("UPDATED_AT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("ACCOUNT_CODE");
-                });
-
-            modelBuilder.Entity("Hrms.Common.Models.AccountType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("ID");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("CREATED_AT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("varchar(255)")
-                        .HasColumnName("NAME");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("UPDATED_AT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("ACCOUNT_TYPE");
-                });
 
             modelBuilder.Entity("Hrms.Common.Models.Announcement", b =>
                 {
@@ -2502,17 +2444,9 @@ namespace Hrms.Common.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("AccountCodeId")
-                        .HasColumnType("integer")
-                        .HasColumnName("ACCOUNT_CODE_ID");
-
                     b.Property<string>("AccountNumber")
                         .HasColumnType("varchar(20)")
                         .HasColumnName("AccountNo");
-
-                    b.Property<int?>("AccountTypeId")
-                        .HasColumnType("integer")
-                        .HasColumnName("ACCOUNT_TYPE_ID");
 
                     b.Property<decimal?>("BasicSalary")
                         .HasColumnType("numeric(12,2)")
@@ -2521,10 +2455,6 @@ namespace Hrms.Common.Data.Migrations
                     b.Property<float?>("BasicTax")
                         .HasColumnType("real")
                         .HasColumnName("BTAX");
-
-                    b.Property<int?>("BhandarId")
-                        .HasColumnType("integer")
-                        .HasColumnName("BHANDAR_ID");
 
                     b.Property<short?>("BranchId")
                         .HasColumnType("smallint")
@@ -2621,10 +2551,6 @@ namespace Hrms.Common.Data.Migrations
                     b.Property<int?>("GradeId")
                         .HasColumnType("integer")
                         .HasColumnName("GRADE");
-
-                    b.Property<int?>("GuestId")
-                        .HasColumnType("integer")
-                        .HasColumnName("GUEST_ID");
 
                     b.Property<int?>("HodEmpId")
                         .HasColumnType("integer")
@@ -2783,12 +2709,6 @@ namespace Hrms.Common.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountCodeId");
-
-                    b.HasIndex("AccountTypeId");
-
-                    b.HasIndex("BhandarId");
-
                     b.HasIndex("BranchId");
 
                     b.HasIndex("BusinessUnitId");
@@ -2806,8 +2726,6 @@ namespace Hrms.Common.Data.Migrations
                     b.HasIndex("EmployeeId");
 
                     b.HasIndex("GradeId");
-
-                    b.HasIndex("GuestId");
 
                     b.HasIndex("HodEmpId");
 
@@ -6664,18 +6582,6 @@ namespace Hrms.Common.Data.Migrations
 
             modelBuilder.Entity("Hrms.Common.Models.EmpTransaction", b =>
                 {
-                    b.HasOne("Hrms.Common.Models.AccountCode", "AccountCode")
-                        .WithMany()
-                        .HasForeignKey("AccountCodeId");
-
-                    b.HasOne("Hrms.Common.Models.AccountType", "AccountType")
-                        .WithMany()
-                        .HasForeignKey("AccountTypeId");
-
-                    b.HasOne("Hrms.Common.Models.Bhandar", "Bhandar")
-                        .WithMany()
-                        .HasForeignKey("BhandarId");
-
                     b.HasOne("Hrms.Common.Models.Branch", "Branch")
                         .WithMany()
                         .HasForeignKey("BranchId");
@@ -6711,10 +6617,6 @@ namespace Hrms.Common.Data.Migrations
                     b.HasOne("Hrms.Common.Models.Grade", "Grade")
                         .WithMany()
                         .HasForeignKey("GradeId");
-
-                    b.HasOne("Hrms.Common.Models.Guest", "Guest")
-                        .WithMany()
-                        .HasForeignKey("GuestId");
 
                     b.HasOne("Hrms.Common.Models.EmpDetail", "HodEmp")
                         .WithMany()
@@ -6756,12 +6658,6 @@ namespace Hrms.Common.Data.Migrations
                         .WithMany()
                         .HasForeignKey("UniformTypeId");
 
-                    b.Navigation("AccountCode");
-
-                    b.Navigation("AccountType");
-
-                    b.Navigation("Bhandar");
-
                     b.Navigation("Branch");
 
                     b.Navigation("BusinessUnit");
@@ -6779,8 +6675,6 @@ namespace Hrms.Common.Data.Migrations
                     b.Navigation("Employee");
 
                     b.Navigation("Grade");
-
-                    b.Navigation("Guest");
 
                     b.Navigation("HodEmp");
 

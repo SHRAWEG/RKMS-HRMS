@@ -220,6 +220,12 @@ namespace Hrms.Common.Models
         public DateOnly? BirthdayCelebrationDate { get; set; }
 
         [Column("UPDATED_AT")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;        
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("Profile_DOC_ID")]
+        public int? ProfileDocumentId { get; set; }
+
+        public EmpDocument? ProfileDocument { get; set; }
+
     }
 }

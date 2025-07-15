@@ -237,6 +237,29 @@ namespace Hrms.AdminApi.Controllers
             {
                 return ErrorHelper.ErrorResult("Id", "Id is invalid.");
             }
+            var downloadBase = GetDownloadBaseUrl();
+
+            var profileDoc = await _context.EmpDocuments.FirstOrDefaultAsync(x => x.Id == data.ProfileDocumentId);
+            var aadharDoc = await _context.EmpDocuments.FirstOrDefaultAsync(x => x.Id == data.AadharDocumentId);
+            var panDoc = await _context.EmpDocuments.FirstOrDefaultAsync(x => x.Id == data.PanDocumentId);
+            var dlDoc = await _context.EmpDocuments.FirstOrDefaultAsync(x => x.Id == data.DrivingLicenseDocumentId);
+            var passportDoc = await _context.EmpDocuments.FirstOrDefaultAsync(x => x.Id == data.PassportDocumentId);
+
+
+            string? GetFileUrl(int? docId, string? fileName)
+            {
+                if (!docId.HasValue || string.IsNullOrWhiteSpace(fileName))
+                    return null;
+                try
+                {
+                    return Uri.UnescapeDataString($"{downloadBase}download/{docId}/{fileName}");
+                }
+                catch
+                {
+                    return null; 
+                }
+            }
+
 
             return Ok(new
             {
@@ -285,239 +308,279 @@ namespace Hrms.AdminApi.Controllers
                     data.PanNumber,
                     data.PanDocumentId,
                     data.DrivingLicenseNumber,
-                    data.DrivingLicenseDocumentId
+                    data.DrivingLicenseDocumentId,
+                    data.ProfileDocumentId,
                     //EmploymentHistories = employmentHistoris,
                     //Educations = educations,
                     //Families = families,
+                    ProfileFilePath = GetFileUrl(data.ProfileDocumentId, profileDoc?.FileName),
+                    AadharFilePath = GetFileUrl(data.AadharDocumentId, aadharDoc?.FileName),
+                    PanFilePath = GetFileUrl(data.PanDocumentId, panDoc?.FileName),
+                    DrivingLicenseFilePath = GetFileUrl(data.DrivingLicenseDocumentId, dlDoc?.FileName),
+                    PassportFilePath = GetFileUrl(data.PassportDocumentId, passportDoc?.FileName),
+
                 }
             });
         }
 
-        // Post: EmpDetails/Create
-        [CustomAuthorize("write-employee")]
-        [HttpPost]
-        public async Task<IActionResult> Create([FromForm] AddInputModel input)
-        {
-            DateOnly? dateOfBirth = null;
-            DateOnly? joinDate = null;
-            DateOnly? marriageDate = null;
-            DateOnly? relevingDate = null;
-            DateOnly? appointedDate = null;
-            EmpDocument? passport = new();
-            EmpDocument? aadhar = new();
-            EmpDocument? pan = new();
-            EmpDocument? drivingLicense = new();
-
-            if (!string.IsNullOrEmpty(input.DateOfBirth))
+            // Post: EmpDetails/Create
+            [CustomAuthorize("write-employee")]
+            [HttpPost]
+            public async Task<IActionResult> Create([FromForm] AddInputModel input)
             {
-                dateOfBirth = DateOnly.ParseExact(input.DateOfBirth, "yyyy-MM-dd");
-            }
+                DateOnly? dateOfBirth = null;
+                DateOnly? joinDate = null;
+                DateOnly? marriageDate = null;
+                DateOnly? relevingDate = null;
+                DateOnly? appointedDate = null;
+                EmpDocument? passport = new();
+                EmpDocument? aadhar = new();
+                EmpDocument? pan = new();
+                EmpDocument? drivingLicense = new();
+                EmpDocument? profilefile = new();
 
-            if (!string.IsNullOrEmpty(input.JoinDate))
-            {
-                joinDate = DateOnly.ParseExact(input.JoinDate, "yyyy-MM-dd");
-            }
-
-            if (!string.IsNullOrEmpty(input.MarriageDate))
-            {
-                marriageDate = DateOnly.ParseExact(input.MarriageDate, "yyyy-MM-dd");
-            }
-
-            if (!string.IsNullOrEmpty(input.RelevingDate))
-            {
-                relevingDate = DateOnly.ParseExact(input.RelevingDate, "yyyy-MM-dd");
-            }
-
-            if (!string.IsNullOrEmpty(input.AppointedDate))
-            {
-                appointedDate = DateOnly.ParseExact(input.AppointedDate, "yyyy-MM-dd");
-            }
-
-            if (input.PassportFile != null)
-            {
-                string filename = input.PassportFile.FileName;
-
-                passport = new()
+                if (!string.IsNullOrEmpty(input.DateOfBirth))
                 {
-                    FileName = filename,
-                    FileDescription = "passport",
-                    FileExtension = Path.GetExtension(filename),
-                    Remarks = "passport",
+                    dateOfBirth = DateOnly.ParseExact(input.DateOfBirth, "yyyy-MM-dd");
+                }
+
+                if (!string.IsNullOrEmpty(input.JoinDate))
+                {
+                    joinDate = DateOnly.ParseExact(input.JoinDate, "yyyy-MM-dd");
+                }
+
+                if (!string.IsNullOrEmpty(input.MarriageDate))
+                {
+                    marriageDate = DateOnly.ParseExact(input.MarriageDate, "yyyy-MM-dd");
+                }
+
+                if (!string.IsNullOrEmpty(input.RelevingDate))
+                {
+                    relevingDate = DateOnly.ParseExact(input.RelevingDate, "yyyy-MM-dd");
+                }
+
+                if (!string.IsNullOrEmpty(input.AppointedDate))
+                {
+                    appointedDate = DateOnly.ParseExact(input.AppointedDate, "yyyy-MM-dd");
+                }
+
+                if (input.PassportFile != null)
+                {
+                    string filename = input.PassportFile.FileName;
+
+                    passport = new()
+                    {
+                        FileName = filename,
+                        FileDescription = "passport",
+                        FileExtension = Path.GetExtension(filename),
+                        Remarks = "passport",
+                    };
+
+                    _context.Add(passport);
+                    await _context.SaveChangesAsync();
+
+                    string directoryPath = Path.Combine(Folder.EmpDocuments, passport.Id.ToString());
+
+                    string filePath = Path.Combine(directoryPath, filename);
+
+                    string fullDirectoryPath = Path.Combine(_config["FilePath"], directoryPath);
+
+                    string fullFilePath = Path.Combine(_config["FilePath"], filePath);
+
+                    Directory.CreateDirectory(fullDirectoryPath);
+
+                    using (var stream = System.IO.File.Create(fullFilePath))
+                    {
+                        await input.PassportFile.CopyToAsync(stream);
+                    };
+                }
+
+                if (input.AadharFile != null)
+                {
+                    string filename = input.AadharFile.FileName;
+
+                    aadhar = new()
+                    {
+                        FileName = filename,
+                        FileDescription = "aadhar",
+                        FileExtension = Path.GetExtension(filename),
+                        Remarks = "aadhar",
+                    };
+
+                    _context.Add(aadhar);
+                    await _context.SaveChangesAsync();
+
+                    string directoryPath = Path.Combine(Folder.EmpDocuments, aadhar.Id.ToString());
+
+                    string filePath = Path.Combine(directoryPath, filename);
+
+                    string fullDirectoryPath = Path.Combine(_config["FilePath"], directoryPath);
+
+                    string fullFilePath = Path.Combine(_config["FilePath"], filePath);
+
+                    Directory.CreateDirectory(fullDirectoryPath);
+
+                    using (var stream = System.IO.File.Create(fullFilePath))
+                    {
+                        await input.AadharFile.CopyToAsync(stream);
+                    };
+                }
+
+                if (input.PanFile != null)
+                {
+                    string filename = input.PanFile.FileName;
+
+                    pan = new()
+                    {
+                        FileName = filename,
+                        FileDescription = "pan",
+                        FileExtension = Path.GetExtension(filename),
+                        Remarks = "pan",
+                    };
+
+                    _context.Add(pan);
+                    await _context.SaveChangesAsync();
+
+                    string directoryPath = Path.Combine(Folder.EmpDocuments, pan.Id.ToString());
+
+                    string filePath = Path.Combine(directoryPath, filename);
+
+                    string fullDirectoryPath = Path.Combine(_config["FilePath"], directoryPath);
+
+                    string fullFilePath = Path.Combine(_config["FilePath"], filePath);
+
+                    Directory.CreateDirectory(fullDirectoryPath);
+
+                    using (var stream = System.IO.File.Create(fullFilePath))
+                    {
+                        await input.PanFile.CopyToAsync(stream);
+                    };
+                }
+
+                if (input.DrivingLicenseFile != null)
+                {
+                    string filename = input.DrivingLicenseFile.FileName;
+
+                    drivingLicense = new()
+                    {
+                        FileName = filename,
+                        FileDescription = "drivingLicense",
+                        FileExtension = Path.GetExtension(filename),
+                        Remarks = "drivingLicense",
+                    };
+
+                    _context.Add(drivingLicense);
+                    await _context.SaveChangesAsync();
+
+                    string directoryPath = Path.Combine(Folder.EmpDocuments, drivingLicense.Id.ToString());
+
+                    string filePath = Path.Combine(directoryPath, filename);
+
+                    string fullDirectoryPath = Path.Combine(_config["FilePath"], directoryPath);
+
+                    string fullFilePath = Path.Combine(_config["FilePath"], filePath);
+
+                    Directory.CreateDirectory(fullDirectoryPath);
+
+                    using (var stream = System.IO.File.Create(fullFilePath))
+                    {
+                        await input.DrivingLicenseFile.CopyToAsync(stream);
+                    };
+                }
+                if (input.ProfileFile != null)
+                {
+                    string filename = input.ProfileFile.FileName;
+
+                    profilefile = new()
+                    {
+                        FileName = filename,
+                        FileDescription = "profilefile",
+                        FileExtension = Path.GetExtension(filename),
+                        Remarks = "profilefile",
+                    };
+
+                    _context.Add(profilefile);
+                    await _context.SaveChangesAsync();
+
+                    string directoryPath = Path.Combine(Folder.EmpDocuments, profilefile.Id.ToString());
+
+                    string filePath = Path.Combine(directoryPath, filename);
+
+                    string fullDirectoryPath = Path.Combine(_config["FilePath"], directoryPath);
+
+                    string fullFilePath = Path.Combine(_config["FilePath"], filePath);
+
+                    Directory.CreateDirectory(fullDirectoryPath);
+
+                    using (var stream = System.IO.File.Create(fullFilePath))
+                    {
+                        await input.ProfileFile.CopyToAsync(stream);
+                    }
+                    ;
+                }
+
+                EmpDetail data = new()
+                {
+                    CardId = input.EmpCode.Trim(),
+                    Title = input.Title,
+                    FirstName = input.FirstName,
+                    MiddleName = input.MiddleName,
+                    LastName = input.LastName,
+                    Email = input.Email?.Trim().ToLower(),
+                    ContactNumber = input.ContactNumber,
+                    Gender = input.Gender,
+                    MaritalStatus = input.MaritalStatus,
+                    BloodGroup = input.BloodGroup ?? "",
+                    Nationality = input.Nationality,
+                    BirthCountryId = input.BirthCountryId,
+                    ReligionId = input.ReligionId,
+                    BirthStateId = input.BirthStateId,
+                    BirthPlace = input.BirthPlace,
+                    DateOfBirth = dateOfBirth,
+                    JoinDate = joinDate,
+                    MarriageDate = marriageDate,
+                    RelevingDate = relevingDate,
+                    AppointedDate = appointedDate,
+                    PermanentAddress = input.PermanentAddress,
+                    PermanentAddress2 = input.PermanentAddress2,
+                    PermanentCity = input.PermanentCity,
+                    PermanentPincode = input.PermanentPincode,
+                    PermanentState = input.PermanentState,
+                    PermanentDistrict = input.PermanentDistrict,
+                    CorrespondanceAddress = input.CorrespondanceAddress,
+                    CorrespondanceAddress2 = input.CorrespondanceAddress2,
+                    CorrespondanceCity = input.CorrespondanceCity,
+                    CorrespondancePincode = input.CorrespondancePincode,
+                    CorrespondanceState = input.CorrespondanceState,
+                    CorrespondanceDistrict = input.CorrespondanceDistrict,
+                    PanNumber = input.PanNumber,
+                    PassportNumber = input.PassportNumber,
+                    AadharNumber = input.AadharNumber,
+                    DrivingLicenseNumber = input.DrivingLicenseNumber ?? "",
+                    PassportDocumentId = input.PassportFile != null ? passport.Id : null,
+                    AadharDocumentId = input.AadharFile != null ? aadhar.Id : null,
+                    PanDocumentId = input.PanFile != null ? pan.Id : null,
+                    DrivingLicenseDocumentId = input.DrivingLicenseFile != null ? drivingLicense.Id : null,
+                    ProfileDocumentId = input.ProfileFile != null ? profilefile.Id : null,
+
+                    //DefaultValues
+                    Appointed = 0,
+                    EmergencyContactPerson = "N/A",
+                    EmergencyContactNumber = "N/A",
+                    FatherName = "N/A",
+                    MotherName = "N/A",
+                    GrandFatherName = "N/A",
+                    TransactionUser = "N/A",
                 };
 
-                _context.Add(passport);
+                _context.Add(data);
                 await _context.SaveChangesAsync();
 
-                string directoryPath = Path.Combine(Folder.EmpDocuments, passport.Id.ToString());
-
-                string filePath = Path.Combine(directoryPath, filename);
-
-                string fullDirectoryPath = Path.Combine(_config["FilePath"], directoryPath);
-
-                string fullFilePath = Path.Combine(_config["FilePath"], filePath);
-
-                Directory.CreateDirectory(fullDirectoryPath);
-
-                using (var stream = System.IO.File.Create(fullFilePath))
+                return Ok(new
                 {
-                    await input.PassportFile.CopyToAsync(stream);
-                };
+                    Id = data.Id,
+                });
             }
-
-            if (input.AadharFile != null)
-            {
-                string filename = input.AadharFile.FileName;
-
-                aadhar = new()
-                {
-                    FileName = filename,
-                    FileDescription = "aadhar",
-                    FileExtension = Path.GetExtension(filename),
-                    Remarks = "aadhar",
-                };
-
-                _context.Add(aadhar);
-                await _context.SaveChangesAsync();
-
-                string directoryPath = Path.Combine(Folder.EmpDocuments, aadhar.Id.ToString());
-
-                string filePath = Path.Combine(directoryPath, filename);
-
-                string fullDirectoryPath = Path.Combine(_config["FilePath"], directoryPath);
-
-                string fullFilePath = Path.Combine(_config["FilePath"], filePath);
-
-                Directory.CreateDirectory(fullDirectoryPath);
-
-                using (var stream = System.IO.File.Create(fullFilePath))
-                {
-                    await input.AadharFile.CopyToAsync(stream);
-                };
-            }
-
-            if (input.PanFile != null)
-            {
-                string filename = input.PanFile.FileName;
-
-                pan = new()
-                {
-                    FileName = filename,
-                    FileDescription = "pan",
-                    FileExtension = Path.GetExtension(filename),
-                    Remarks = "pan",
-                };
-
-                _context.Add(pan);
-                await _context.SaveChangesAsync();
-
-                string directoryPath = Path.Combine(Folder.EmpDocuments, pan.Id.ToString());
-
-                string filePath = Path.Combine(directoryPath, filename);
-
-                string fullDirectoryPath = Path.Combine(_config["FilePath"], directoryPath);
-
-                string fullFilePath = Path.Combine(_config["FilePath"], filePath);
-
-                Directory.CreateDirectory(fullDirectoryPath);
-
-                using (var stream = System.IO.File.Create(fullFilePath))
-                {
-                    await input.PanFile.CopyToAsync(stream);
-                };
-            }
-
-            if (input.DrivingLicenseFile != null)
-            {
-                string filename = input.DrivingLicenseFile.FileName;
-
-                drivingLicense = new()
-                {
-                    FileName = filename,
-                    FileDescription = "drivingLicense",
-                    FileExtension = Path.GetExtension(filename),
-                    Remarks = "drivingLicense",
-                };
-
-                _context.Add(drivingLicense);
-                await _context.SaveChangesAsync();
-
-                string directoryPath = Path.Combine(Folder.EmpDocuments, drivingLicense.Id.ToString());
-
-                string filePath = Path.Combine(directoryPath, filename);
-
-                string fullDirectoryPath = Path.Combine(_config["FilePath"], directoryPath);
-
-                string fullFilePath = Path.Combine(_config["FilePath"], filePath);
-
-                Directory.CreateDirectory(fullDirectoryPath);
-
-                using (var stream = System.IO.File.Create(fullFilePath))
-                {
-                    await input.DrivingLicenseFile.CopyToAsync(stream);
-                };
-            }
-
-            EmpDetail data = new()
-            {
-                CardId = input.EmpCode.Trim(),
-                Title = input.Title,
-                FirstName = input.FirstName,
-                MiddleName = input.MiddleName,
-                LastName = input.LastName,
-                Email = input.Email?.Trim().ToLower(),
-                ContactNumber = input.ContactNumber,
-                Gender = input.Gender,
-                MaritalStatus = input.MaritalStatus,
-                BloodGroup = input.BloodGroup ?? "",
-                Nationality = input.Nationality,
-                BirthCountryId = input.BirthCountryId,
-                ReligionId = input.ReligionId,
-                BirthStateId = input.BirthStateId,
-                BirthPlace = input.BirthPlace,
-                DateOfBirth = dateOfBirth,
-                JoinDate = joinDate,
-                MarriageDate = marriageDate,
-                RelevingDate = relevingDate,
-                AppointedDate = appointedDate,
-                PermanentAddress = input.PermanentAddress,
-                PermanentAddress2 = input.PermanentAddress2,
-                PermanentCity = input.PermanentCity,
-                PermanentPincode = input.PermanentPincode,
-                PermanentState = input.PermanentState,
-                PermanentDistrict = input.PermanentDistrict,
-                CorrespondanceAddress = input.CorrespondanceAddress,
-                CorrespondanceAddress2 = input.CorrespondanceAddress2,
-                CorrespondanceCity = input.CorrespondanceCity,
-                CorrespondancePincode = input.CorrespondancePincode,
-                CorrespondanceState = input.CorrespondanceState,
-                CorrespondanceDistrict = input.CorrespondanceDistrict,
-                PanNumber = input.PanNumber,
-                PassportNumber = input.PassportNumber,
-                AadharNumber = input.AadharNumber,
-                DrivingLicenseNumber = input.DrivingLicenseNumber ?? "",
-                PassportDocumentId = input.PassportFile != null ? passport.Id : null,
-                AadharDocumentId = input.AadharFile != null ? aadhar.Id : null,
-                PanDocumentId = input.PanFile != null ? pan.Id : null,
-                DrivingLicenseDocumentId = input.DrivingLicenseFile != null ? drivingLicense.Id : null,
-
-                //DefaultValues
-                Appointed = 0,
-                EmergencyContactPerson = "N/A",
-                EmergencyContactNumber = "N/A",
-                FatherName = "N/A",
-                MotherName = "N/A",
-                GrandFatherName = "N/A",
-                TransactionUser = "N/A",
-            };
-
-            _context.Add(data);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                Id = data.Id,
-            });
-        }
 
         [CustomAuthorize("register-employee")]
         [HttpPost("RegisterEmp/{id}")]
@@ -563,6 +626,7 @@ namespace Hrms.AdminApi.Controllers
                 .Include(x => x.PassportDocument)
                 .Include(x => x.AadharDocument)
                 .Include(x => x.DrivingLicenseDocument)
+                .Include(x => x.ProfileDocument)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (User.GetUserRole() != "super-admin")
@@ -588,6 +652,7 @@ namespace Hrms.AdminApi.Controllers
             EmpDocument? aadhar = new();
             EmpDocument? pan = new();
             EmpDocument? drivingLicense = new();
+            EmpDocument? profilefile = new();
 
             if (!string.IsNullOrEmpty(input.DateOfBirth))
             {
@@ -655,7 +720,7 @@ namespace Hrms.AdminApi.Controllers
 
                     _context.Add(passport);
                     await _context.SaveChangesAsync();
-
+                    data.PassportDocumentId = passport.Id;
                     string directoryPath = Path.Combine(Folder.EmpDocuments, passport.Id.ToString());
 
                     string filePath = Path.Combine(directoryPath, filename);
@@ -715,7 +780,7 @@ namespace Hrms.AdminApi.Controllers
 
                     _context.Add(aadhar);
                     await _context.SaveChangesAsync();
-
+                    data.AadharDocumentId = aadhar.Id;
                     string directoryPath = Path.Combine(Folder.EmpDocuments, aadhar.Id.ToString());
 
                     string filePath = Path.Combine(directoryPath, filename);
@@ -775,6 +840,8 @@ namespace Hrms.AdminApi.Controllers
 
                     _context.Add(pan);
                     await _context.SaveChangesAsync();
+
+                    data.PanDocumentId = pan.Id;
 
                     string directoryPath = Path.Combine(Folder.EmpDocuments, pan.Id.ToString());
 
@@ -836,6 +903,8 @@ namespace Hrms.AdminApi.Controllers
                     _context.Add(drivingLicense);
                     await _context.SaveChangesAsync();
 
+                    data.DrivingLicenseDocumentId = drivingLicense.Id;
+
                     string directoryPath = Path.Combine(Folder.EmpDocuments, drivingLicense.Id.ToString());
 
                     string filePath = Path.Combine(directoryPath, filename);
@@ -850,6 +919,66 @@ namespace Hrms.AdminApi.Controllers
                     {
                         await input.DrivingLicenseFile.CopyToAsync(stream);
                     };
+                }
+            }
+            if (input.ProfileFile != null)
+            {
+                string filename = input.ProfileFile.FileName;
+
+                if (data.ProfileDocumentId != null)
+                {
+                    string directoryPath = Path.Combine(Folder.EmpDocuments, data.ProfileDocumentId.ToString());
+
+                    string filePath = Path.Combine(directoryPath, data.ProfileDocument?.FileName);
+
+                    string fullDirectoryPath = Path.Combine(_config["FilePath"], directoryPath);
+
+                    string fullFilePath = Path.Combine(_config["FilePath"], filePath);
+
+                    System.IO.File.Delete(fullFilePath);
+
+                    string newFilePath = Path.Combine(directoryPath, filename);
+
+                    string newFullFilePath = Path.Combine(_config["FilePath"], newFilePath);
+
+                    Directory.CreateDirectory(fullDirectoryPath);
+
+                    using (var stream = System.IO.File.Create(newFullFilePath))
+                    {
+                        await input.ProfileFile.CopyToAsync(stream);
+                    };
+
+                    data.ProfileDocument.FileName = filename;
+                    data.ProfileDocument.FileExtension = Path.GetExtension(filename);
+                }
+                else
+                {
+                    profilefile = new()
+                    {
+                        FileName = filename,
+                        FileDescription = "ProfilePhoto",
+                        FileExtension = Path.GetExtension(filename),
+                        Remarks = "ProfilePhoto",
+                    };
+
+                    _context.Add(profilefile);
+                    await _context.SaveChangesAsync();
+
+                    string directoryPath = Path.Combine(Folder.EmpDocuments, profilefile.Id.ToString());
+
+                    string filePath = Path.Combine(directoryPath, filename);
+
+                    string fullDirectoryPath = Path.Combine(_config["FilePath"], directoryPath);
+
+                    string fullFilePath = Path.Combine(_config["FilePath"], filePath);
+
+                    Directory.CreateDirectory(fullDirectoryPath);
+
+                    using (var stream = System.IO.File.Create(fullFilePath))
+                    {
+                        await input.ProfileFile.CopyToAsync(stream);
+                    }
+                    input.ProfileDocumentId = profilefile.Id;
                 }
             }
 
@@ -889,6 +1018,7 @@ namespace Hrms.AdminApi.Controllers
             data.PassportNumber = input.PassportNumber;
             data.AadharNumber = input.AadharNumber;
             data.DrivingLicenseNumber = input.DrivingLicenseNumber ?? "";
+            data.ProfileDocumentId = input.ProfileDocumentId;
 
             await _context.SaveChangesAsync();
 
@@ -927,15 +1057,41 @@ namespace Hrms.AdminApi.Controllers
             _context.RemoveRange(_context.Educations.Where(x => x.EmpId == id).ToList());
             _context.RemoveRange(_context.Families.Where(x => x.EmpId == id).ToList());
             _context.RemoveRange(_context.DefaultWorkHours.Where(x => x.EmpId == id).ToList());
-            
+
             await _context.SaveChangesAsync();
-            
+
             _context.EmpDetails.Remove(data);
 
 
 
             return Ok();
         }
+
+        private string GetDownloadBaseUrl()
+        {
+            string baseUrl = $"{Request.Scheme}://{Request.Host.Value}";
+            bool isUat = true; // or inject from config if needed
+
+            if (isUat)
+            {
+                if (baseUrl.Contains("7129"))
+                {
+                    baseUrl = baseUrl.Replace("7129", "6002");
+                    baseUrl = baseUrl.Replace("::", ":");
+                }
+                else if (baseUrl.Contains("59.179.16.123"))
+                {
+                    baseUrl = $"{Request.Scheme}://{Request.Host.Value}";
+                }
+                else
+                {
+                    baseUrl = $"{Request.Scheme}://{Request.Host.Value}:6002";
+                }
+            }
+
+            return $"{baseUrl}/download/";
+        }
+
 
         private static string FullName(string firstName, string middleName, string lastName)
         {
@@ -984,6 +1140,8 @@ namespace Hrms.AdminApi.Controllers
             public IFormFile AadharFile { get; set; }
             public IFormFile PanFile { get; set; }
             public IFormFile DrivingLicenseFile { get; set; }
+            public IFormFile ProfileFile { get; set; }
+            public int? ProfileDocumentId { get; set; }
         }
 
         public class AddInputModel : BaseInputModel { }
@@ -1069,6 +1227,11 @@ namespace Hrms.AdminApi.Controllers
                 RuleFor(x => x.PermanentPincode)
                     .MustBeDigits(6)
                     .Unless(x => string.IsNullOrEmpty(x.PermanentPincode));
+
+                RuleFor(x => x.ProfileFile)
+                    .Must(x => _extenstions.Contains(Path.GetExtension(x.FileName)))
+                    .WithMessage("Please upload only listed extensions: '.jpg', '.jpeg', '.png', '.pdf' ")
+                    .Unless(x => x.ProfileFile is null);
 
                 //RuleFor(x => x.PassportFile)
                 //    .Must(x => _extenstions.Contains(Path.GetExtension(x.FileName)))

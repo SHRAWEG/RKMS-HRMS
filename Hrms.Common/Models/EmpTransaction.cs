@@ -242,6 +242,27 @@ namespace Hrms.Common.Models
         public bool? VpfApplicable { get; set; } = false;
 
         [Column("VPF_AMOUNT", TypeName = "numeric(18,2)")]
-        public decimal? VpfAmount { get; set; }    
+        public decimal? VpfAmount { get; set; }
+        public Guest? Guest { get; set; }
+
+        [Column("GUEST_ID")]
+        public int? GuestId { get; set; }
+
+        public Bhandar? Bhandar { get; set; }
+
+        [Column("BHANDAR_ID")]
+        public int? BhandarId { get; set; }
+
+        public AccountType? AccountType { get; set; }
+
+        [Column("ACCOUNT_TYPE_ID")]
+        public int? AccountTypeId { get; set; }
+
+        public AccountCode? AccountCode { get; set; }
+
+        [Column("ACCOUNT_CODE_ID")]
+        public int? AccountCodeId { get; set; }
+
+      
     }
 }

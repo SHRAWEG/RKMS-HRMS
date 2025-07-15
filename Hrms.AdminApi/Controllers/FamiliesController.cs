@@ -14,6 +14,7 @@ namespace Hrms.EmpApi.Controllers
     {
         private readonly DataContext _context;
         private readonly UserManager<User> _userManager;
+        private readonly IConfiguration _config;
         private static readonly IEnumerable<string> _relationshipTypes = new List<string>()
             {
                 "Mother",
@@ -27,11 +28,14 @@ namespace Hrms.EmpApi.Controllers
                 "Female"
             };
 
-        public FamiliesController(DataContext context, UserManager<User> userManager)
+
+        public FamiliesController(DataContext context, UserManager<User> userManager, IConfiguration config)
         {
             _context = context;
             _userManager = userManager;
+            _config = config;
         }
+
 
         // GET: Families
         [HttpGet("All/{empId}")]
@@ -41,20 +45,47 @@ namespace Hrms.EmpApi.Controllers
                 .Where(x => x.EmpId == empId)
                 .ToListAsync();
 
-            return Ok(new
+            var docIds = data
+                .Where(x => x.DocumentId.HasValue)
+                .Select(x => x.DocumentId!.Value)
+                .ToList();
+
+            var documents = await _context.EmpDocuments
+                .Where(d => docIds.Contains(d.Id))
+                .ToDictionaryAsync(d => d.Id);
+
+            var downloadBase = GetDownloadBaseUrl();
+
+            string? GetFileUrl(int docId, string? fileName)
             {
-                Data = data.Select(x => new
-                {
-                    x.Id,
-                    x.RelationshipType,
-                    x.Name,
-                    x.Gender,
-                    x.DateOfBirth,
-                    x.IsWorking,
-                    x.PlaceOfBirth
-                }),
+                if (string.IsNullOrWhiteSpace(fileName)) return null;
+                return Uri.UnescapeDataString($"{downloadBase}download/{docId}/{fileName}");
+            }
+
+            var result = data.Select(x => new
+            {
+                x.Id,
+                x.RelationshipType,
+                x.Name,
+                x.Gender,
+                x.DateOfBirth,
+                x.IsWorking,
+                x.PlaceOfBirth,
+                x.IsNominee,
+                x.ContactNumber,
+                x.PercentageOfShare,
+                x.DocumentId,
+                FileName = x.DocumentId.HasValue && documents.ContainsKey(x.DocumentId.Value)
+                    ? documents[x.DocumentId.Value].FileName
+                    : null,
+                NomineeDocumentPath = x.DocumentId.HasValue && documents.ContainsKey(x.DocumentId.Value)
+                    ? GetFileUrl(x.DocumentId.Value, documents[x.DocumentId.Value].FileName)
+                    : null
             });
+
+            return Ok(new { Data = result });
         }
+
 
         // GET: Families/5
         [HttpGet("{id}")]
@@ -78,16 +109,47 @@ namespace Hrms.EmpApi.Controllers
                     data.Gender,
                     data.DateOfBirth,
                     data.IsWorking,
-                    data.PlaceOfBirth
+                    data.PlaceOfBirth,
+                    data.IsNominee,
+                    data.ContactNumber,
+                    data.PercentageOfShare,
+                    data.DocumentId
+
                 }
             });
         }
 
         // Post: Families/Create
         [HttpPost]
-        public async Task<IActionResult> Create(AddInputModel input)
+        public async Task<IActionResult> Create([FromForm] AddInputModel input)
         {
             DateOnly dateOfBirth = DateOnlyHelper.ParseDateOrNow(input.DateOfBirth);
+            int? documentId = null;
+
+            if (input.NomineeDocument != null)
+            {
+                var filename = input.NomineeDocument.FileName;
+                var document = new EmpDocument
+                {
+                    FileName = filename,
+                    FileDescription = "Nominee Document",
+                    FileExtension = Path.GetExtension(filename),
+                    Remarks = input.Name
+                };
+
+                _context.EmpDocuments.Add(document);
+                await _context.SaveChangesAsync();
+
+                string directoryPath = Path.Combine(Folder.EmpDocuments, document.Id.ToString());
+                string fullDirectoryPath = Path.Combine(_config["FilePath"], directoryPath);
+                string fullFilePath = Path.Combine(fullDirectoryPath, filename);
+
+                Directory.CreateDirectory(fullDirectoryPath);
+                using var stream = System.IO.File.Create(fullFilePath);
+                await input.NomineeDocument.CopyToAsync(stream);
+
+                documentId = document.Id;
+            }
 
             Family data = new()
             {
@@ -97,35 +159,85 @@ namespace Hrms.EmpApi.Controllers
                 Gender = input.Gender,
                 DateOfBirth = dateOfBirth,
                 IsWorking = input.IsWorking,
-                PlaceOfBirth = input.PlaceOfBirth
+                PlaceOfBirth = input.PlaceOfBirth,
+                IsNominee = input.IsNominee,
+                ContactNumber = input.ContactNumber,
+                PercentageOfShare = input.PercentageOfShare,
+                DocumentId = documentId
             };
 
-            _context.Add(data);
+            _context.Families.Add(data);
             await _context.SaveChangesAsync();
 
             return Ok();
         }
 
+
         // PUT: Families/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Edit(int id, UpdateInputModel input)
+        public async Task<IActionResult> Edit(int id, [FromForm] UpdateInputModel input)
         {
             var data = await _context.Families.FirstOrDefaultAsync(c => c.Id == id);
+            if (data == null)
+                return ErrorHelper.ErrorResult("Id", "Id is invalid.");
 
             DateOnly dateOfBirth = DateOnlyHelper.ParseDateOrNow(input.DateOfBirth);
 
+            // Update basic fields
             data.RelationshipType = input.RelationshipType;
             data.Name = input.Name;
             data.Gender = input.Gender;
             data.DateOfBirth = dateOfBirth;
             data.IsWorking = input.IsWorking;
             data.PlaceOfBirth = input.PlaceOfBirth;
+            data.IsNominee = input.IsNominee;
+            data.ContactNumber = input.ContactNumber;
+            data.PercentageOfShare = input.PercentageOfShare;
             data.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            // Replace document if new file is uploaded
+            if (input.NomineeDocument != null)
+            {
+                // Delete old file if exists
+                if (data.DocumentId.HasValue)
+                {
+                    var existingDoc = await _context.EmpDocuments.FindAsync(data.DocumentId.Value);
+                    if (existingDoc != null)
+                    {
+                        string existingPath = Path.Combine(_config["FilePath"], Folder.EmpDocuments, existingDoc.Id.ToString(), existingDoc.FileName);
+                        if (System.IO.File.Exists(existingPath))
+                            System.IO.File.Delete(existingPath);
 
+                        _context.EmpDocuments.Remove(existingDoc);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                // Save new document
+                var newDoc = new EmpDocument
+                {
+                    FileName = input.NomineeDocument.FileName,
+                    FileDescription = "Nominee Document",
+                    FileExtension = Path.GetExtension(input.NomineeDocument.FileName),
+                    Remarks = input.Name
+                };
+
+                _context.EmpDocuments.Add(newDoc);
+                await _context.SaveChangesAsync();
+
+                string dir = Path.Combine(_config["FilePath"], Folder.EmpDocuments, newDoc.Id.ToString());
+                Directory.CreateDirectory(dir);
+                string path = Path.Combine(dir, newDoc.FileName);
+                using var stream = System.IO.File.Create(path);
+                await input.NomineeDocument.CopyToAsync(stream);
+
+                data.DocumentId = newDoc.Id;
+            }
+
+            await _context.SaveChangesAsync();
             return Ok();
         }
+
 
         // DELETE: Families/5
         [HttpDelete("{id}")]
@@ -143,7 +255,30 @@ namespace Hrms.EmpApi.Controllers
 
             return Ok();
         }
+        private string GetDownloadBaseUrl()
+        {
+            string baseUrl = $"{Request.Scheme}://{Request.Host.Value}";
+            bool isUat = true; // or inject from config if needed
 
+            if (isUat)
+            {
+                if (baseUrl.Contains("7129"))
+                {
+                    baseUrl = baseUrl.Replace("7129", "6002");
+                    baseUrl = baseUrl.Replace("::", ":");
+                }
+                else if (baseUrl.Contains("59.179.16.123"))
+                {
+                    baseUrl = $"{Request.Scheme}://{Request.Host.Value}";
+                }
+                else
+                {
+                    baseUrl = $"{Request.Scheme}://{Request.Host.Value}:6002";
+                }
+            }
+
+            return $"{baseUrl}/download/";
+        }
         public class BaseInputModel
         {
             public string RelationshipType { get; set; }
@@ -152,14 +287,26 @@ namespace Hrms.EmpApi.Controllers
             public string DateOfBirth { get; set; }
             public bool IsWorking { get; set; }
             public string? PlaceOfBirth { get; set; }
+            public bool IsNominee { get; set; } = false;
+            public string? ContactNumber { get; set; }
+            public decimal? PercentageOfShare { get; set; }
         }
 
-        public class AddInputModel : BaseInputModel 
-        { 
+        public class AddInputModel : BaseInputModel
+        {
             public int EmpId { get; set; }
+            [FromForm]
+            public IFormFile? NomineeDocument { get; set; }
         }
 
-        public class UpdateInputModel : BaseInputModel { }
+        
+        public class UpdateInputModel : BaseInputModel
+        {
+            [FromForm]
+            public IFormFile? NomineeDocument { get; set; } 
+        }
+        [FromForm]
+        public IFormFile? NomineeDocument { get; set; }
 
         public class AddInputModelValidator : AbstractValidator<AddInputModel>
         {
