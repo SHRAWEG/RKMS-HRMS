@@ -173,6 +173,8 @@ namespace Hrms.AdminApi.Controllers
                     AccountTypeName = data?.AccountType?.Name,
                     data?.AccountCodeId,
                     AccountCodeName = data?.AccountCode?.Name,
+                    data?.ContractStartDate,
+                    data?.ContractEndDate,
 
                 }
             });
@@ -275,6 +277,8 @@ namespace Hrms.AdminApi.Controllers
                 BhandarId = input.BhandarId,
                 AccountTypeId = input.AccountTypeId,
                 AccountCodeId = input.AccountCodeId,
+                ContractStartDate = input.ContractStartDate,
+                ContractEndDate = input.ContractEndDate,
                 TransactionUser = User.GetUsername(),
 
                 //Default Values
@@ -540,7 +544,8 @@ namespace Hrms.AdminApi.Controllers
             data.BhandarId = input.BhandarId;
             data.AccountTypeId = input.AccountTypeId;
             data.AccountCodeId = input.AccountCodeId;
-
+            data.ContractStartDate = input.ContractStartDate;
+            data.ContractEndDate = input.ContractEndDate;
             await _context.SaveChangesAsync();
 
             return Ok();
@@ -784,6 +789,8 @@ namespace Hrms.AdminApi.Controllers
             public int? BhandarId { get; set; }
             public int? AccountTypeId { get; set; }
             public int? AccountCodeId { get; set; }
+            public DateTime? ContractStartDate { get; set; }
+            public DateTime? ContractEndDate { get; set; }
 
 
         }

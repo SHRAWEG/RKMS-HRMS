@@ -263,6 +263,12 @@ namespace Hrms.Common.Models
         [Column("ACCOUNT_CODE_ID")]
         public int? AccountCodeId { get; set; }
 
-      
+        [Column("CONTRACT_START_DATE", TypeName = "date")]
+        public DateTime? ContractStartDate { get; set; }
+
+        [Column("CONTRACT_END_DATE", TypeName = "date")]
+        public DateTime? ContractEndDate { get; set; }
+
+
     }
 }
