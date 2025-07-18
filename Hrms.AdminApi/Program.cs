@@ -132,8 +132,8 @@ app.UsePathBase("/api");
 
 //app.UseHttpsRedirection();
 app.UseCors("AllowAll");
-//var basePath = "/api";
-var basePath = ":6001/api";
+var basePath = "/api";
+//var basePath = ":6001/api";
 app.UseSwagger(c =>
 {
     c.RouteTemplate = "swagger/{documentName}/swagger.json";
