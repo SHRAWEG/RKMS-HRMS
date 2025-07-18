@@ -2,6 +2,7 @@
 using MathNet.Numerics.RootFinding;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace Hrms.Common.Data
 {
@@ -131,6 +132,8 @@ namespace Hrms.Common.Data
         public DbSet<Guest> Guests { get; set; }
         public DbSet<AccountType> AccountTypes { get; set; }
         public DbSet<AccountCode> AccountCodes { get; set; }
+        public DbSet<DocumentType> DocumentTypes { get; set; }
+        public DbSet<EmpAdditionalDocument> EmpAdditionalDocuments { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -260,6 +263,18 @@ namespace Hrms.Common.Data
                 .HasOne(e => e.AccountCode)
                 .WithMany()
                 .HasForeignKey(e => e.AccountCodeId);
+
+            builder.Entity<DocumentType>()
+                .HasIndex(d => d.Name)
+                .IsUnique();
+
+            builder.Entity<EmpAdditionalDocument>()
+                .HasOne(e => e.DocumentType)
+                .WithMany()
+                .HasForeignKey(e => e.DocumentTypeId);
+    
+
+
         }
     }
 }

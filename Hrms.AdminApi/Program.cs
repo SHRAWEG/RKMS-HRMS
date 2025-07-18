@@ -109,18 +109,40 @@ builder.Services.AddDbContext<DataContext>((sp, options) =>
 builder.Services.AddScoped<DbHelper>();
 
 
+
 var app = builder.Build();
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Add("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self'; style-src 'self';");
+    context.Response.Headers.Add("X-Frame-Options", "SAMEORIGIN");
+    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Add("Referrer-Policy", "no-referrer"); // Add Referrer-Policy header
+    context.Response.Headers.Add("Permissions-Policy", "geolocation=(), camera=(), microphone=()"); // Add Permissions-Policy header
+    await next();
+});
+app.UsePathBase("/api");
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseCors("AllowAll");
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+//if (app.Environment.IsDevelopment())
+//{
+//    app.UseCors("AllowAll");
+//    app.UseSwagger();
+//    app.UseSwaggerUI();
+//}
 
 //app.UseHttpsRedirection();
-
+app.UseCors("AllowAll");
+var basePath = "/api";
+app.UseSwagger(c =>
+{
+    c.RouteTemplate = "swagger/{documentName}/swagger.json";
+    c.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
+    {
+        swaggerDoc.Servers = new List<OpenApiServer> { new OpenApiServer { Url = $"{httpReq.Scheme}://{httpReq.Host.Value}{basePath}" } };
+    });
+});
+app.UseSwaggerUI();
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 

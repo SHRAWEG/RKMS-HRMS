@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Hrms.Common.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Hrms.Common.Data.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250717101310_AddEmpAdditionalDocumentTable")]
+    partial class AddEmpAdditionalDocumentTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1756,8 +1758,6 @@ namespace Hrms.Common.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DocumentId");
-
-                    b.HasIndex("DocumentTypeId");
 
                     b.HasIndex("EmpId");
 
@@ -6573,12 +6573,6 @@ namespace Hrms.Common.Data.Migrations
                         .WithMany()
                         .HasForeignKey("DocumentId");
 
-                    b.HasOne("Hrms.Common.Models.DocumentType", "DocumentType")
-                        .WithMany()
-                        .HasForeignKey("DocumentTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Hrms.Common.Models.EmpDetail", "Emp")
                         .WithMany()
                         .HasForeignKey("EmpId")
@@ -6586,8 +6580,6 @@ namespace Hrms.Common.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Document");
-
-                    b.Navigation("DocumentType");
 
                     b.Navigation("Emp");
                 });

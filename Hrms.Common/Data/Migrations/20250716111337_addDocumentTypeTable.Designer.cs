@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Hrms.Common.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Hrms.Common.Data.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250716111337_addDocumentTypeTable")]
+    partial class addDocumentTypeTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1718,50 +1720,6 @@ namespace Hrms.Common.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("EDUCATION_LEVEL");
-                });
-
-            modelBuilder.Entity("Hrms.Common.Models.EmpAdditionalDocument", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("ID");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("CREATED_AT");
-
-                    b.Property<int?>("DocumentId")
-                        .HasColumnType("integer")
-                        .HasColumnName("DOCUMENT_ID");
-
-                    b.Property<string>("DocumentNumber")
-                        .HasColumnType("varchar(255)")
-                        .HasColumnName("DOCUMENT_NUMBER");
-
-                    b.Property<int>("DocumentTypeId")
-                        .HasColumnType("integer")
-                        .HasColumnName("DOCUMENT_TYPE_ID");
-
-                    b.Property<int>("EmpId")
-                        .HasColumnType("integer")
-                        .HasColumnName("EMP_ID");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("UPDATED_AT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DocumentId");
-
-                    b.HasIndex("DocumentTypeId");
-
-                    b.HasIndex("EmpId");
-
-                    b.ToTable("EMP_ADDITIONAL_DOCUMENTS");
                 });
 
             modelBuilder.Entity("Hrms.Common.Models.EmpCalendar", b =>
@@ -6563,31 +6521,6 @@ namespace Hrms.Common.Data.Migrations
                     b.Navigation("Document");
 
                     b.Navigation("EducationLevel");
-
-                    b.Navigation("Emp");
-                });
-
-            modelBuilder.Entity("Hrms.Common.Models.EmpAdditionalDocument", b =>
-                {
-                    b.HasOne("Hrms.Common.Models.EmpDocument", "Document")
-                        .WithMany()
-                        .HasForeignKey("DocumentId");
-
-                    b.HasOne("Hrms.Common.Models.DocumentType", "DocumentType")
-                        .WithMany()
-                        .HasForeignKey("DocumentTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Hrms.Common.Models.EmpDetail", "Emp")
-                        .WithMany()
-                        .HasForeignKey("EmpId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Document");
-
-                    b.Navigation("DocumentType");
 
                     b.Navigation("Emp");
                 });
